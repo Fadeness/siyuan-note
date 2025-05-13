@@ -9,6 +9,11 @@
   "categories": [
     "Other"
   ],
+  "publisher": "Fadeness",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fadeness/siyuan-note.git"
+  },
   "type": "module",
   "activationEvents": [],
   "main": "./out/extension.js",
