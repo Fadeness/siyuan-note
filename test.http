@@ -1,0 +1,9 @@
+POST http://127.0.0.1:6806/api/filetree/createDocWithMd
+Authorization: token td9gun3lcxif2em2
+Content-Type: "application/json"
+
+{
+  "notebook": "20250511010334-yy7kfer",
+  "path": "/20250511010334-yy7kfer",
+  "markdown": "---\ntitle: C+++++\ntags: CMake\nnotebook: C\n---\n\n> ![NOTE]\n> this is a note\n\n$a+b=2$\n\n## 232\n"
+}

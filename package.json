@@ -2,20 +2,52 @@
   "name": "siyuan-note",
   "displayName": "Siyuan-note",
   "description": "Manage notes on Visual Studio Code for Siyuan",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
     "Other"
   ],
+  "type": "module",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "siyuan-note.helloWorld",
-        "title": "Hello World"
+        "command": "siyuan-note.publishNote",
+        "title": "Siyuan Publish: Publish current editting note to Siyuan server"
+      },
+      {
+        "command": "siyuan-note.newNote",
+        "title": "Siyuan New: Create a new empty note with metadata template"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Siyuan Note Configuration",
+        "properties": {
+          "siyuan-note.host": {
+            "type": "string",
+            "default": "127.0.0.1",
+            "description": "Host of your Siyuan endpoint"
+          },
+          "siyuan-note.port": {
+            "type": "string",
+            "default": "6806",
+            "description": "Port of your Siyuan endpoint"
+          },
+          "siyuan-note.token": {
+            "type": "string",
+            "description": "Your API token"
+          }
+        }
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "siyuan-note.newNote",
+        "key": "alt+n"
       }
     ]
   },
@@ -28,14 +60,22 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.100.0",
+    "@types/axios": "^0.14.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/marked": "^5.0.2",
+    "axios": "^1.9.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.11",
+    "marked-alert": "^2.1.2"
   }
 }
