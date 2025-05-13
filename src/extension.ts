@@ -2,8 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { ApiService } from './services/siyuanService.js';
-import { marked } from 'marked';
-import markedAlert from 'marked-alert';
 import matter from 'gray-matter';
 import { HttpClient } from './utils/httpClient.js';
 
