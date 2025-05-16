@@ -11,18 +11,22 @@ export async function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   const httpClient = new HttpClient();
   const apiService = new ApiService(httpClient);
+  let serverConnected = false;
+  let notebookMaps = new Map();
 
-  let notebooks;
+  let notebooks: any;
   try {
     notebooks = await apiService.getNotebookList();
+    serverConnected = true;
   } catch (err) {
     console.log(err);
   }
-  let notebookMaps = new Map();
-  if (notebooks && notebooks?.length > 0) {
-    for (const notebook of notebooks) {
-      notebookMaps.set(notebook.name, notebook.id);
-      notebookMaps.set(notebook.id, notebook.name);
+  if (serverConnected) {
+    if (notebooks && notebooks?.length > 0) {
+      for (const notebook of notebooks) {
+        notebookMaps.set(notebook.name, notebook.id);
+        notebookMaps.set(notebook.id, notebook.name);
+      }
     }
   }
 
@@ -38,6 +42,9 @@ export async function activate(context: vscode.ExtensionContext) {
     {
       provideCompletionItems(document, position, token, context) {
         if (position.line === 3) {
+          if (!notebooks) {
+            return [];
+          }
           if (notebooks.length === 0) {
             return [];
           }
@@ -66,6 +73,21 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      if (!serverConnected) {
+        try {
+          notebooks = await apiService.getNotebookList();
+          serverConnected = true;
+        } catch (err) {
+          console.log(err);
+        }
+        if (notebooks && notebooks?.length > 0) {
+          for (const notebook of notebooks) {
+            notebookMaps.set(notebook.name, notebook.id);
+            notebookMaps.set(notebook.id, notebook.name);
+          }
+        }
+      }
+
       const document = editor.document;
       if (
         document.languageId !== 'markdown' &&
@@ -76,6 +98,9 @@ export async function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
+
+      // TODO: deal with HTML content not rendering issue
+      // TODO: should contains tags metadata
 
       const markdownRaw = document.getText();
       let notebook: string, title: string, subNotebook: string;
