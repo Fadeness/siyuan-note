@@ -1,25 +1,25 @@
 import { HttpClient } from '../utils/httpClient.js';
 
 interface CommonResponse<T> {
-  msg: string;
-  data: T;
-  code: number;
+  msg: string
+  data: T
+  code: number
 }
 
-interface Nootebook {
-  id: string;
-  name: string;
-  icon: string;
-  sort: number;
-  closed: boolean;
+export interface Notebook {
+  id: string
+  name: string
+  icon: string
+  sort: number
+  closed: boolean
 }
 
 interface NotebooksResponse {
-  notebooks: Nootebook[];
+  notebooks: Notebook[]
 }
 
 interface NotebookResponse {
-  notebook: Nootebook;
+  notebook: Notebook
 }
 
 export class ApiService {
@@ -29,21 +29,21 @@ export class ApiService {
     this.client = client || new HttpClient();
   }
 
-  async getNotebookList(): Promise<Nootebook[]> {
+  async getNotebookList(): Promise<Notebook[]> {
     const response = await this.client.post<CommonResponse<NotebooksResponse>>(
-      '/api/notebook/lsNotebooks'
+      '/api/notebook/lsNotebooks',
     );
     return response.data.data.notebooks;
   }
 
-  async createNotebook(notebookName: string): Promise<Nootebook> {
+  async createNotebook(notebookName: string): Promise<Notebook> {
     const response = await this.client.post<CommonResponse<NotebookResponse>>(
       '/api/notebook/createNotebook',
       {
         data: {
           name: notebookName,
         },
-      }
+      },
     );
     return response.data.data.notebook;
   }
@@ -55,56 +55,45 @@ export class ApiService {
         data: {
           id: noteId,
         },
-      }
+      },
     );
     return response.data.code === 0 ? true : false;
   }
 
   async getNoteIdByPath(
     notebookId: string,
-    subNotebook: string,
-    title: string
+    path: string,
+    title: string,
   ): Promise<string[]> {
-    let path;
-    if (!subNotebook || subNotebook === '') {
-      path = `/${title}`;
-    } else {
-      path = `/${subNotebook}/${title}`;
-    }
     const response = await this.client.post<CommonResponse<string[]>>(
       '/api/filetree/getIDsByHPath',
       {
         data: {
-          path,
+          path: `${path}/${title}`,
           notebook: notebookId,
         },
-      }
+      },
     );
     return response.data.data;
   }
 
   async createNoteFromMarkdown(
     notebookId: string,
-    subNotebook: string,
+    path: string,
     title: string,
-    markdown: string
+    tags: string,
+    markdown: string,
   ) {
-    let path;
-    if (!subNotebook || subNotebook === '') {
-      path = `/${title}`;
-    } else {
-      path = `/${subNotebook}/${title}`;
-    }
-
     const response = await this.client.post<CommonResponse<string>>(
       '/api/filetree/createDocWithMd',
       {
         data: {
           notebook: notebookId,
-          path,
+          path: `${path}/${title}`,
           markdown,
+          tags,
         },
-      }
+      },
     );
     return response.data.data;
   }

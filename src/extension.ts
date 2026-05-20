@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ApiService } from './services/siyuanService.js';
+import { ApiService, Notebook } from './services/siyuanService.js';
 import matter from 'gray-matter';
 import { HttpClient } from './utils/httpClient.js';
 
@@ -13,52 +13,27 @@ export async function activate(context: vscode.ExtensionContext) {
   const apiService = new ApiService(httpClient);
   let serverConnected = false;
   let notebookMaps = new Map();
+  let notebooks: Notebook[];
 
-  let notebooks: any;
   try {
-    notebooks = await apiService.getNotebookList();
     serverConnected = true;
   } catch (err) {
     vscode.window.showErrorMessage(String(err));
   }
+
   if (serverConnected) {
-    if (notebooks && notebooks?.length > 0) {
-      for (const notebook of notebooks) {
-        notebookMaps.set(notebook.name, notebook.id);
-        notebookMaps.set(notebook.id, notebook.name);
+    try {
+      notebooks = await apiService.getNotebookList();
+      if (notebooks && notebooks?.length > 0) {
+        for (const notebook of notebooks) {
+          notebookMaps.set(notebook.name, notebook.id);
+          notebookMaps.set(notebook.id, notebook.name);
+        }
       }
+    } catch (err) {
+      vscode.window.showErrorMessage(String(err));
     }
   }
-
-  // Notebook completion
-  let provider = vscode.languages.registerCompletionItemProvider(
-    [
-      'plaintext',
-      {
-        scheme: 'untitled',
-        language: 'markdown',
-      },
-    ],
-    {
-      provideCompletionItems(document, position, token, context) {
-        if (position.line === 3) {
-          if (!notebooks) {
-            return [];
-          }
-          if (notebooks.length === 0) {
-            return [];
-          }
-          let completionItems = [];
-          for (const notebook of notebooks!) {
-            const completionItem = new vscode.CompletionItem(notebook.name);
-            completionItem.kind = vscode.CompletionItemKind.Snippet;
-            completionItems.push(completionItem);
-          }
-          return completionItems;
-        }
-      },
-    }
-  );
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
@@ -77,14 +52,14 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           notebooks = await apiService.getNotebookList();
           serverConnected = true;
+          if (notebooks && notebooks?.length > 0) {
+            for (const notebook of notebooks) {
+              notebookMaps.set(notebook.name, notebook.id);
+              notebookMaps.set(notebook.id, notebook.name);
+            }
+          }
         } catch (err) {
           vscode.window.showErrorMessage(String(err));
-        }
-        if (notebooks && notebooks?.length > 0) {
-          for (const notebook of notebooks) {
-            notebookMaps.set(notebook.name, notebook.id);
-            notebookMaps.set(notebook.id, notebook.name);
-          }
         }
       }
 
@@ -93,9 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
         document.languageId !== 'markdown' &&
         !document.uri.fsPath.endsWith('.md')
       ) {
-        vscode.window.showErrorMessage(
-          'The actie file is not a Markdown file.'
-        );
+        vscode.window.showErrorMessage('Active file is not a Markdown file.');
         return;
       }
 
@@ -103,22 +76,26 @@ export async function activate(context: vscode.ExtensionContext) {
       // TODO: should contains tags metadata
 
       const markdownRaw = document.getText();
-      let notebook: string, title: string, subNotebook: string;
+      let title: string, path: string, tags: string;
 
       // 提取 markdown 文件中的 metadata
       const { data, content } = matter(markdownRaw);
-      notebook = data['notebook'];
+      path = data['path'];
       title = data['title'];
-      subNotebook = data['subnotebook'];
+      tags = data['tags'];
       if (title === '') {
-        title = '缺省标题';
+        title = 'Fallback title';
       }
 
+      const notebookList = path.split('/');
+      const notebook = notebookList[0];
+      const notePath = path.substring(notebook.length);
+
       // 检查 notebook 是否存在
-      let notebookId, newNotebook;
+      let notebookId, newNotebook: Notebook;
 
       if (notebookMaps.has(notebook)) {
-        notebookId = notebookMaps.get(notebook!);
+        notebookId = notebookMaps.get(notebook);
       } else {
         // 不存在则新建 notebook
         try {
@@ -136,11 +113,7 @@ export async function activate(context: vscode.ExtensionContext) {
       // 检查是否有重名 note
       let notes;
       try {
-        notes = await apiService.getNoteIdByPath(
-          notebookId,
-          subNotebook,
-          title
-        );
+        notes = await apiService.getNoteIdByPath(notebookId, notePath, title);
       } catch (err) {
         vscode.window.showErrorMessage(String(err));
         return;
@@ -161,9 +134,10 @@ export async function activate(context: vscode.ExtensionContext) {
       try {
         const noteId = await apiService.createNoteFromMarkdown(
           notebookId,
-          subNotebook,
+          notePath,
           title,
-          content
+          tags,
+          content,
         );
         if (noteId && noteId !== '') {
           vscode.window.showInformationMessage('Note published!');
@@ -172,7 +146,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(String(err));
         return;
       }
-    }
+    },
   );
 
   const newNote = vscode.commands.registerCommand(
@@ -181,7 +155,7 @@ export async function activate(context: vscode.ExtensionContext) {
       vscode.workspace
         .openTextDocument({
           language: 'markdown',
-          content: '---\ntitle: \ntags: \nnotebook: \nsubnotebook: \n---',
+          content: '---\ntitle: \ntags: \npath: \n---',
         })
         .then(
           (document) => {
@@ -194,15 +168,14 @@ export async function activate(context: vscode.ExtensionContext) {
           },
           (reason) => {
             vscode.window.showErrorMessage(
-              `Failed to create new note, due to ${reason}`
+              `Failed to create new note, due to ${reason}`,
             );
             return;
-          }
+          },
         );
-    }
+    },
   );
 
-  context.subscriptions.push(provider);
   context.subscriptions.push(publishNote);
   context.subscriptions.push(newNote);
 }
