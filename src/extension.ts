@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext) {
     notebooks = await apiService.getNotebookList();
     serverConnected = true;
   } catch (err) {
-    console.log(err);
+    vscode.window.showErrorMessage(String(err));
   }
   if (serverConnected) {
     if (notebooks && notebooks?.length > 0) {
@@ -78,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
           notebooks = await apiService.getNotebookList();
           serverConnected = true;
         } catch (err) {
-          console.log(err);
+          vscode.window.showErrorMessage(String(err));
         }
         if (notebooks && notebooks?.length > 0) {
           for (const notebook of notebooks) {
@@ -124,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           newNotebook = await apiService.createNotebook(notebook);
         } catch (err) {
-          console.log(err);
+          vscode.window.showErrorMessage(String(err));
           return;
         }
         notebookId = newNotebook?.id;
@@ -142,7 +142,7 @@ export async function activate(context: vscode.ExtensionContext) {
           title
         );
       } catch (err) {
-        console.log(err);
+        vscode.window.showErrorMessage(String(err));
         return;
       }
 
@@ -152,7 +152,7 @@ export async function activate(context: vscode.ExtensionContext) {
           try {
             await apiService.deleteNoteById(note);
           } catch (err) {
-            console.log(err);
+            vscode.window.showErrorMessage(String(err));
             return;
           }
         }
@@ -169,7 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
           vscode.window.showInformationMessage('Note published!');
         }
       } catch (err) {
-        console.log(err);
+        vscode.window.showErrorMessage(String(err));
         return;
       }
     }
