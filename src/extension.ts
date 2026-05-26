@@ -15,26 +15,6 @@ export async function activate(context: vscode.ExtensionContext) {
   let notebookMaps = new Map();
   let notebooks: Notebook[];
 
-  try {
-    serverConnected = true;
-  } catch (err) {
-    vscode.window.showErrorMessage(String(err));
-  }
-
-  if (serverConnected) {
-    try {
-      notebooks = await apiService.getNotebookList();
-      if (notebooks && notebooks?.length > 0) {
-        for (const notebook of notebooks) {
-          notebookMaps.set(notebook.name, notebook.id);
-          notebookMaps.set(notebook.id, notebook.name);
-        }
-      }
-    } catch (err) {
-      vscode.window.showErrorMessage(String(err));
-    }
-  }
-
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
@@ -45,6 +25,15 @@ export async function activate(context: vscode.ExtensionContext) {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showErrorMessage('No active editor found.');
+        return;
+      }
+
+      const document = editor.document;
+      if (
+        document.languageId !== 'markdown' &&
+        !document.uri.fsPath.endsWith('.md')
+      ) {
+        vscode.window.showErrorMessage('Active file is not a Markdown file.');
         return;
       }
 
@@ -63,18 +52,6 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
 
-      const document = editor.document;
-      if (
-        document.languageId !== 'markdown' &&
-        !document.uri.fsPath.endsWith('.md')
-      ) {
-        vscode.window.showErrorMessage('Active file is not a Markdown file.');
-        return;
-      }
-
-      // TODO: deal with HTML content not rendering issue
-      // TODO: should contains tags metadata
-
       const markdownRaw = document.getText();
       let title: string, path: string, tags: string;
 
@@ -92,7 +69,8 @@ export async function activate(context: vscode.ExtensionContext) {
       const notePath = path.substring(notebook.length);
 
       // 检查 notebook 是否存在
-      let notebookId, newNotebook: Notebook;
+      let notebookId;
+      let newNotebook: Notebook;
 
       if (notebookMaps.has(notebook)) {
         notebookId = notebookMaps.get(notebook);
